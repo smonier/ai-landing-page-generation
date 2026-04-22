@@ -110,10 +110,15 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
         String errorClass = null;
 
         try {
-            // Ingest optional document
+            // Ingest optional document (supports TXT, MD, PDF, DOCX)
             String documentContext = null;
             if (documentBase64 != null && !documentBase64.isBlank()) {
                 documentContext = documentIngestionService.extractText(documentBase64, documentMimeType);
+                if (documentContext != null) {
+                    log.info("Document context extracted: {} chars from {}.", documentContext.length(), documentMimeType);
+                } else {
+                    log.warn("Could not extract text from document type '{}' — document will be ignored.", documentMimeType);
+                }
             }
 
             // Fetch optional URLs (server-side only)
@@ -122,6 +127,7 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
                 for (String url : urls) {
                     String fetched = urlFetchService.fetch(url);
                     if (fetched != null) {
+                        log.info("Fetched {} chars from URL: {}", fetched.length(), url);
                         urlContext.append(fetched).append("\n\n");
                     }
                 }
@@ -161,7 +167,7 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
             }
 
             success = true;
-            return result.toString();
+            return stripCodeFences(result.toString());
 
         } catch (Exception e) {
             errorClass = e.getClass().getSimpleName();
@@ -180,6 +186,31 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
     public String getTones() { return tones; }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Strips markdown code fences from the AI response.
+     * Handles ```json ... ```, ``` ... ```, and any leading/trailing whitespace.
+     */
+    private static String stripCodeFences(String raw) {
+        if (raw == null) return null;
+        String trimmed = raw.strip();
+        // Match an optional language tag after the opening fence
+        if (trimmed.startsWith("```")) {
+            int firstNewline = trimmed.indexOf('\n');
+            if (firstNewline != -1) {
+                trimmed = trimmed.substring(firstNewline + 1);
+            }
+
+            if (trimmed.endsWith("```")) {
+                trimmed = trimmed.substring(0, trimmed.lastIndexOf("```"));
+            }
+
+            return trimmed.strip();
+        }
+
+        return trimmed;
+    }
+
     private String currentUser() {
         try {
             javax.jcr.Session s = org.jahia.services.content.JCRSessionFactory

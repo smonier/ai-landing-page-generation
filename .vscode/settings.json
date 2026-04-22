@@ -3,6 +3,10 @@
         "src/main/resources/javascript/locales"
     ],
     "chat.tools.terminal.autoApprove": {
-        "docker cp": true
-    }
+        "docker cp": true,
+        "javap": true,
+        "mvn dependency:tree": true,
+        "jar": true
+    },
+    "i18n-ally.keystyle": "nested"
 }

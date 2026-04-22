@@ -16,7 +16,7 @@ import {
     TextField,
     Typography
 } from '@mui/material';
-import {fileToBase64, generatePage, getConfig, getTemplates, materializePage} from './AiLandingPage.utils';
+import {generatePage, getConfig, getTemplates, materializePage} from './AiLandingPage.utils';
 
 // ── Dialog steps ──────────────────────────────────────────────────────────────
 const STEP_FORM = 'FORM';
@@ -31,8 +31,6 @@ const initialState = {
     audience: '',
     tone: '',
     documentFile: null,
-    documentBase64: null,
-    documentMimeType: null,
     urlsRaw: '',
     structureJson: null,
     pageTitle: '',
@@ -47,9 +45,7 @@ function reducer(state, action) {
         case 'SET_DOCUMENT':
             return {
                 ...state,
-                documentFile: action.file,
-                documentBase64: action.base64,
-                documentMimeType: action.mimeType
+                documentFile: action.file
             };
         case 'GENERATING':
             return {...state, step: STEP_LOADING, error: null};
@@ -102,7 +98,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
     }, [nodePath, lang]);
 
     // ── Handlers ─────────────────────────────────────────────────────────────
-    const handleFileChange = useCallback(async e => {
+    const handleFileChange = useCallback(e => {
         const file = e.target.files?.[0];
         if (!file) {
             return;
@@ -113,8 +109,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
             return;
         }
 
-        const {base64, mimeType} = await fileToBase64(file);
-        dispatch({type: 'SET_DOCUMENT', file, base64, mimeType});
+        dispatch({type: 'SET_DOCUMENT', file});
     }, []);
 
     const handleGenerate = useCallback(async () => {
@@ -141,8 +136,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                 prompt: state.prompt,
                 audience: state.audience,
                 tone: state.tone,
-                documentBase64: state.documentBase64,
-                documentMimeType: state.documentMimeType,
+                documentFile: state.documentFile || null,
                 urls: state.urlsRaw || null
             });
 
@@ -365,7 +359,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                 )}
                 {state.step === STEP_SUCCESS && (
                     <Button variant="contained" onClick={onClose}>
-                        {t('ai-landing-page-generation.dialog.cancel.button')}
+                        {t('ai-landing-page-generation.dialog.close.button')}
                     </Button>
                 )}
             </DialogActions>

@@ -49,37 +49,38 @@ export async function getConfig(nodePath, lang) {
  * @param {string} params.prompt         - author's natural-language prompt
  * @param {string} params.audience       - selected audience
  * @param {string} params.tone           - selected tone
- * @param {string|null} params.documentBase64   - base-64 encoded document, or null
- * @param {string|null} params.documentMimeType - MIME type, or null
+ * @param {File|null} params.documentFile - raw File object to upload as binary, or null
  * @param {string|null} params.urls      - comma-separated URLs, or null
  * @returns {Promise<{success: boolean, structureJson: string, error: string|null}>}
  */
 export async function generatePage({
     nodePath, lang, prompt, audience, tone,
-    documentBase64, documentMimeType, urls
+    documentFile, urls
 }) {
     const url = buildActionUrl(null, lang, nodePath, 'generatePageAction');
-    const body = new URLSearchParams();
-    body.set('prompt', prompt);
-    body.set('audience', audience);
-    body.set('tone', tone);
-    if (documentBase64) {
-        body.set('documentBase64', documentBase64);
-        body.set('documentMimeType', documentMimeType || '');
+    // Use FormData (multipart) — text fields land in the action parameters map via
+    // Apache Commons FileUpload on the backend, bypassing Jetty's @MultipartConfig requirement.
+    const body = new FormData();
+    body.append('prompt', prompt);
+    body.append('audience', audience);
+    body.append('tone', tone);
+    if (documentFile) {
+        // Append as binary file part — no base64 inflation
+        body.append('documentFile', documentFile, documentFile.name);
     }
 
     if (urls) {
-        body.set('urls', urls);
+        body.append('urls', urls);
     }
 
     const response = await fetch(url, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            // Do NOT set Content-Type — browser sets multipart boundary automatically
             'X-Requested-With': 'XMLHttpRequest'
         },
         credentials: 'same-origin',
-        body: body.toString()
+        body
     });
 
     const text = await response.text();

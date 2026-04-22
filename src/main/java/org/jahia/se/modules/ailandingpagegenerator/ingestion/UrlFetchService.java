@@ -40,7 +40,8 @@ public class UrlFetchService implements ManagedService {
 
     private static final Logger log = LoggerFactory.getLogger(UrlFetchService.class);
 
-    private volatile Set<String> allowedHosts = Collections.emptySet();
+    /** Null means "allow all HTTPS hosts"; an empty set means "explicitly disabled via NONE". */
+    private volatile Set<String> allowedHosts = null;
     private volatile int maxSizeBytes = 5 * 1024 * 1024;   // 5 MB
     private volatile long timeoutMs   = 10_000L;
 
@@ -53,7 +54,9 @@ public class UrlFetchService implements ManagedService {
         if (dictionary == null) return;
         String hosts = getStr(dictionary, "AI_URL_FETCH_ALLOWED_HOSTS", "");
         if (hosts == null || hosts.isBlank()) {
-            allowedHosts = Collections.emptySet();
+            allowedHosts = null; // null = allow all HTTPS
+        } else if ("NONE".equalsIgnoreCase(hosts.trim())) {
+            allowedHosts = Collections.emptySet(); // explicitly disabled
         } else {
             allowedHosts = Arrays.stream(hosts.split(","))
                     .map(String::trim)
@@ -95,15 +98,19 @@ public class UrlFetchService implements ManagedService {
             return null;
         }
 
-        if (allowedHosts.isEmpty()) {
-            log.warn("UrlFetchService: AI_URL_FETCH_ALLOWED_HOSTS is empty — URL fetch disabled.");
-            return null;
-        }
+        if (allowedHosts != null) {
+            // explicit list configured
+            if (allowedHosts.isEmpty()) {
+                log.warn("UrlFetchService: URL fetching is disabled (AI_URL_FETCH_ALLOWED_HOSTS=NONE).");
+                return null;
+            }
 
-        if (!allowedHosts.contains(host.toLowerCase())) {
-            log.warn("UrlFetchService: host '{}' is not on the allow-list.", host);
-            return null;
+            if (!allowedHosts.contains(host.toLowerCase())) {
+                log.warn("UrlFetchService: host '{}' is not on the allow-list.", host);
+                return null;
+            }
         }
+        // else: allowedHosts == null → allow all HTTPS hosts
 
         // ── Fetch ─────────────────────────────────────────────────────────
         try {

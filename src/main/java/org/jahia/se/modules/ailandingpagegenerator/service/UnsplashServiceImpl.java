@@ -108,7 +108,16 @@ public class UnsplashServiceImpl implements UnsplashService, ManagedService {
             JSONObject photo        = results.getJSONObject(0);
             String     photoId      = photo.getString("id");
             String     imageUrl     = photo.getJSONObject("urls").getString("regular");
-            String     photographer = "Unsplash";
+            String     photoName    = photo.optString("alt_description", null);
+            if (photoName == null || photoName.isBlank()) {
+                photoName = photo.optString("description", null);
+            }
+
+            if (photoName == null || photoName.isBlank()) {
+                photoName = photoId;
+            }
+
+            String photographer = "Unsplash";
             if (photo.has("user")) {
                 photographer = photo.getJSONObject("user").optString("name", "Unsplash");
             }
@@ -141,7 +150,7 @@ public class UnsplashServiceImpl implements UnsplashService, ManagedService {
                     .map(ct -> ct.split(";")[0].trim())
                     .orElse("image/jpeg");
 
-            String fileName = "unsplash-" + photoId + toExtension(mimeType);
+            String fileName = toSafeFileName(photoName, photographer) + toExtension(mimeType);
             log.info("UnsplashService: fetched '{}' ({} bytes) for query '{}', photo by {}.",
                     fileName, bytes.length, query, photographer);
 
@@ -181,6 +190,32 @@ public class UnsplashServiceImpl implements UnsplashService, ManagedService {
         } catch (Exception e) {
             log.debug("UnsplashService: download-tracking call failed: {}", e.getMessage());
         }
+    }
+
+    private static String toSafeFileName(String photoName, String photographer) {
+        String namePart   = slugify(photoName);
+        String authorPart = slugify(photographer);
+        // Truncate to avoid excessively long filenames
+        if (namePart.length() > 60) {
+            namePart = namePart.substring(0, 60);
+        }
+
+        if (authorPart.length() > 40) {
+            authorPart = authorPart.substring(0, 40);
+        }
+
+        return namePart + "-by-" + authorPart;
+    }
+
+    /** Converts a string to a lowercase, hyphenated, filesystem-safe slug. */
+    private static String slugify(String value) {
+        if (value == null || value.isBlank()) {
+            return "unknown";
+        }
+
+        return value.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")   // replace non-alphanumeric runs with hyphen
+                .replaceAll("^-+|-+$", "");       // trim leading/trailing hyphens
     }
 
     private static String toExtension(String mimeType) {

@@ -1,17 +1,20 @@
 package org.jahia.se.modules.ailandingpagegenerator.ingestion;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
- * Extracts plain text from uploaded documents (TXT, MD).
- * Binary formats (PDF, DOCX) are accepted but return null — the caller skips
- * document context gracefully. Uses only standard Java — no external library
- * dependency required in the OSGi container.
+ * Extracts plain text from uploaded documents (TXT, MD, PDF, DOCX).
  */
 @Component(service = DocumentIngestionService.class)
 public class DocumentIngestionService {
@@ -46,14 +49,54 @@ public class DocumentIngestionService {
             return text;
         }
 
-        log.info("Binary document format ({}) received — skipping text extraction.", mimeType);
+        if (isPdfMimeType(mimeType)) {
+            return extractPdfText(bytes);
+        }
+
+        if (isDocxMimeType(mimeType)) {
+            return extractDocxText(bytes);
+        }
+
+        log.warn("Unsupported document format ({}) — skipping text extraction.", mimeType);
         return null;
+    }
+
+    private String extractPdfText(byte[] bytes) {
+        try (PDDocument doc = Loader.loadPDF(bytes)) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(doc);
+            log.info("Extracted {} characters from PDF document ({} pages).", text.length(), doc.getNumberOfPages());
+            return text;
+        } catch (Exception e) {
+            log.warn("PDF text extraction failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractDocxText(byte[] bytes) {
+        try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(bytes));
+             XWPFWordExtractor extractor = new XWPFWordExtractor(doc)) {
+            String text = extractor.getText();
+            log.info("Extracted {} characters from DOCX document.", text.length());
+            return text;
+        } catch (Exception e) {
+            log.warn("DOCX text extraction failed: {}", e.getMessage());
+            return null;
+        }
     }
 
     private boolean isTextMimeType(String mimeType) {
         if (mimeType == null) return false;
         String m = mimeType.toLowerCase();
         return m.contains("text") || m.contains("markdown") || m.contains("plain");
+    }
+
+    private boolean isPdfMimeType(String mimeType) {
+        return mimeType != null && mimeType.toLowerCase().contains("pdf");
+    }
+
+    private boolean isDocxMimeType(String mimeType) {
+        return mimeType != null && mimeType.toLowerCase().contains("openxmlformats");
     }
 
     private void validateMimeType(String mimeType) {

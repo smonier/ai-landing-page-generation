@@ -18,6 +18,7 @@
       "regenerate": { "button": "Régénérer" },
       "accept": { "button": "Accepter et créer le brouillon" },
       "cancel": { "button": "Annuler" },
+      "close": { "button": "Fermer" },
       "generating": "Génération en cours…",
       "preview": { "title": "Aperçu" },
       "error": {

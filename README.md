@@ -221,7 +221,7 @@ Logs every generation request with: prompt hash, audience, tone, input/output to
 
 ## Frontend Components
 
-The UI is a React 16 application bundled with webpack 5 and Module Federation, registered into jContent via `@jahia/ui-extender`.
+The UI is a React 18 application bundled with webpack 5 and Module Federation, registered into jContent via `@jahia/ui-extender`.
 
 ### Registration
 

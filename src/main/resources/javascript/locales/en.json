@@ -17,7 +17,8 @@
       "generate": { "button": "Generate" },
       "regenerate": { "button": "Regenerate" },
       "accept": { "button": "Accept & Create Draft" },
-      "cancel": { "button": "Cancel" },
+      "cancel": { "button": "Cancel" },      
+      "close": { "button": "Close" },
       "generating": "Generating…",
       "preview": { "title": "Preview" },
       "error": {
