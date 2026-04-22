@@ -1,0 +1,14 @@
+# default configuration - won't be overridden
+
+ailandingpagegenerator:
+  description: "AI Landing Page Generator Access"
+  auto_apply:
+    - origin: hosted
+  grants:
+    - api:
+        include: graphql
+#    - node:
+#        pathPattern: /,/files(/.*)?
+#    - node:
+#        pathPattern: jcr,/,/sites/[^/]+/.*
+#        nodeType: game4nt:quiz,game4nt:warmup,game4nt:qna,game4mix:quizChild,wemnt:consentType,wemnt:personalizedContent,wdenmix:widenAsset,jnt:file,jnt:contentReference,jnt:translation,jnt:bigText

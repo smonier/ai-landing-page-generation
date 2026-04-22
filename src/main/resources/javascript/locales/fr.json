@@ -1,0 +1,30 @@
+{
+  "ai-landing-page-generation": {
+    "action": {
+      "label": "Générer une page d'atterrissage"
+    },
+    "dialog": {
+      "title": "Générateur de page IA",
+      "prompt": {
+        "label": "Décrivez votre page d'atterrissage",
+        "placeholder": "ex. Créer une page avec une bannière hero, 2 rangées et une section CTA…"
+      },
+      "audience": { "label": "Audience cible" },
+      "tone": { "label": "Ton" },
+      "template": { "label": "Modèle de page" },
+      "document": { "label": "Joindre un document (PDF, DOCX, TXT, MD — max 10 Mo)" },
+      "urls": { "label": "URLs de référence (séparées par des virgules)" },
+      "generate": { "button": "Générer" },
+      "regenerate": { "button": "Régénérer" },
+      "accept": { "button": "Accepter et créer le brouillon" },
+      "cancel": { "button": "Annuler" },
+      "generating": "Génération en cours…",
+      "preview": { "title": "Aperçu" },
+      "error": {
+        "rateLimit": "Limite de taux atteinte. Veuillez patienter avant de générer à nouveau.",
+        "generic": "La génération a échoué. Veuillez réessayer."
+      },
+      "success": "Brouillon créé avec succès."
+    }
+  }
+}

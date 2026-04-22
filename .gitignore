@@ -1,0 +1,27 @@
+# Intellij
+.idea
+!.idea/jsLinters/**
+!.idea/prettier.xml
+*.iml
+*.ipr
+
+# Node
+dist
+node_modules
+javascript/*
+docker/*
+node/node
+node/yarn/
+
+# Maven build output
+target/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+.env

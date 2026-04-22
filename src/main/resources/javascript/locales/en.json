@@ -1,0 +1,30 @@
+{
+  "ai-landing-page-generation": {
+    "action": {
+      "label": "Generate Landing Page"
+    },
+    "dialog": {
+      "title": "AI Landing Page Generator",
+      "prompt": {
+        "label": "Describe your landing page",
+        "placeholder": "e.g. Create a landing page with a hero banner, 2 rows and a CTA section…"
+      },
+      "audience": { "label": "Target Audience" },
+      "tone": { "label": "Tone" },
+      "template": { "label": "Page Template" },
+      "document": { "label": "Attach Document (PDF, DOCX, TXT, MD — max 10 MB)" },
+      "urls": { "label": "Reference URLs (comma-separated)" },
+      "generate": { "button": "Generate" },
+      "regenerate": { "button": "Regenerate" },
+      "accept": { "button": "Accept & Create Draft" },
+      "cancel": { "button": "Cancel" },
+      "generating": "Generating…",
+      "preview": { "title": "Preview" },
+      "error": {
+        "rateLimit": "Rate limit exceeded. Please wait a moment before generating again.",
+        "generic": "Generation failed. Please try again."
+      },
+      "success": "Draft page created successfully."
+    }
+  }
+}
