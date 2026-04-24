@@ -11,6 +11,7 @@
       },
       "audience": { "label": "Audience cible" },
       "tone": { "label": "Ton" },
+      "provider": { "label": "Fournisseur IA" },
       "template": { "label": "Modèle de page" },
       "document": { "label": "Joindre un document (PDF, DOCX, TXT, MD — max 10 Mo)" },
       "urls": { "label": "URLs de référence (séparées par des virgules)" },

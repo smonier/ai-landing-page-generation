@@ -4,14 +4,15 @@ import java.util.List;
 
 /**
  * Service contract for AI landing page generation.
- * Implementations hold the Anthropic API client and orchestrate prompt assembly,
- * context ingestion, Claude invocation, and page-structure production.
+ * Supports multiple AI providers (Anthropic Claude, OpenAI GPT).
  */
 public interface AiLandingPageService {
 
     /**
      * Generate a landing-page structure from the author's inputs.
      *
+     * @param provider        AI provider to use: "anthropic" or "openai".
+     *                        If null/empty, defaults to the first configured provider.
      * @param prompt          natural-language description of the desired page
      * @param audience        target audience identifier (e.g. "IT", "Finance")
      * @param tone            desired tone identifier (e.g. "Professional", "Bold")
@@ -21,6 +22,7 @@ public interface AiLandingPageService {
      * @return JSON string representing the generated page component tree
      */
     String generatePageStructure(
+            String provider,
             String prompt,
             String audience,
             String tone,
@@ -33,4 +35,10 @@ public interface AiLandingPageService {
 
     /** Returns the comma-separated list of configured tone values. */
     String getTones();
+
+    /**
+     * Returns which AI providers are currently configured (have a non-empty API key).
+     * Possible values in the list: "anthropic", "openai".
+     */
+    List<String> getAvailableProviders();
 }

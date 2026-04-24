@@ -247,24 +247,32 @@ public class MaterializePageAction extends Action {
                                component.optString("content", "Testimonial"));
                 String author = component.optString("authorName",
                                 component.optString("author", "Author"));
-                node.setProperty("quote",      quote);   // mandatory
-                node.setProperty("authorName", author);  // mandatory
-                setIfPresent(node, "authorRole",    component.optString("authorRole", ""));
-                setIfPresent(node, "authorCompany", component.optString("authorCompany", ""));
+                // quote is a richtext property — wrap plain text in a paragraph
+                node.setProperty("quote",      "<p>" + quote.trim() + "</p>");   // mandatory
+                node.setProperty("authorName", author);                          // mandatory
+                setIfPresent(node, "authorRole",         component.optString("authorRole", ""));
+                setIfPresent(node, "authorCompany",      component.optString("authorCompany", ""));
+                setIfPresent(node, "authorImageAltText", component.optString("authorImageAltText", ""));
+                // Fetch author avatar from Unsplash if an alt text hint is provided
+                String avatarQuery = component.optString("authorImageAltText", "");
+                linkImage(session, node, "authorImage", avatarQuery, imagesPath);
             }
             case "ailp:card" -> {
                 JCRNodeWrapper node = parent.addNode(name, "ailp:card");
-                setIfPresent(node, "title",      component.optString("title", ""));
+                setIfPresent(node, "title", component.optString("title", ""));
+                // content is a richtext property — wrap plain text in a paragraph
                 String content = component.optString("content",
                                  component.optString("text", ""));
                 if (!content.isBlank()) {
-                    node.setProperty("content", content);
+                    node.setProperty("content", "<p>" + content.trim() + "</p>");
                 }
                 setIfPresent(node, "ctaLabel",   component.optString("ctaLabel", ""));
                 setIfPresent(node, "ctaUrl",     component.optString("ctaUrl",
                                                  component.optString("url", "")));
-                setIfPresent(node, "ctaTarget",  component.optString("ctaTarget", ""));
-                setIfPresent(node, "ctaVariant", component.optString("ctaVariant", ""));
+                // ctaTarget: honour AI value but fall back to autocreated default '_self'
+                setIfPresent(node, "ctaTarget",  component.optString("ctaTarget", "_self"));
+                // ctaVariant: honour AI value but fall back to autocreated default 'primary'
+                setIfPresent(node, "ctaVariant", component.optString("ctaVariant", "primary"));
             }
             case "ailp:callToAction" -> {
                 // ailp:callToAction is not droppable (no ailpmix:component mixin).

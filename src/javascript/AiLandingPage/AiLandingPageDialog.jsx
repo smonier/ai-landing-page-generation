@@ -30,6 +30,7 @@ const initialState = {
     prompt: '',
     audience: '',
     tone: '',
+    provider: '',
     documentFile: null,
     urlsRaw: '',
     structureJson: null,
@@ -73,6 +74,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
     const fileInputRef = useRef(null);
     const [audiences, setAudiences] = useState(DEFAULT_AUDIENCES);
     const [tones, setTones] = useState(DEFAULT_TONES);
+    const [providers, setProviders] = useState([]);
     const [templates, setTemplates] = useState([]);
 
     useEffect(() => {
@@ -84,6 +86,14 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
 
                 if (cfg.tones && cfg.tones.length > 0) {
                     setTones(cfg.tones);
+                }
+
+                if (cfg.providers && cfg.providers.length > 0) {
+                    setProviders(cfg.providers);
+                    // Auto-select when there's only one provider
+                    if (cfg.providers.length === 1) {
+                        dispatch({type: 'SET_FIELD', field: 'provider', value: cfg.providers[0]});
+                    }
                 }
             })
             .catch(() => { /* keep defaults */ });
@@ -136,6 +146,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                 prompt: state.prompt,
                 audience: state.audience,
                 tone: state.tone,
+                provider: state.provider || null,
                 documentFile: state.documentFile || null,
                 urls: state.urlsRaw || null
             });
@@ -246,6 +257,25 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                                     ))}
                                 </Select>
                             </FormControl>
+
+                            {providers.length > 1 && (
+                                <FormControl fullWidth disabled={isLoading}>
+                                    <InputLabel>{t('ai-landing-page-generation.dialog.provider.label')}</InputLabel>
+                                    <Select
+                                        native
+                                        value={state.provider}
+                                        label={t('ai-landing-page-generation.dialog.provider.label')}
+                                        onChange={e => dispatch({type: 'SET_FIELD', field: 'provider', value: e.target.value})}
+                                    >
+                                        <option value=""/>
+                                        {providers.map(p => (
+                                            <option key={p} value={p}>
+                                                {p === 'anthropic' ? 'Anthropic (Claude)' : 'OpenAI (GPT)'}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            )}
                         </Box>
 
                         <Box>

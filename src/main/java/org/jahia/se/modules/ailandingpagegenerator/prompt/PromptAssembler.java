@@ -172,7 +172,8 @@ public class PromptAssembler {
                   "quote": "<testimonial text — mandatory>",
                   "authorName": "<name — mandatory>",
                   "authorRole": "<job title>",
-                  "authorCompany": "<company name>"
+                  "authorCompany": "<company name>",
+                  "authorImageAltText": "<descriptive alt text for the author avatar — author picks the actual image>"
                 }
                 
                 ailp:card — content card with rich text body and an optional inline CTA button.
@@ -193,8 +194,8 @@ public class PromptAssembler {
                 ── RULES ──────────────────────────────────────────────────────────────────
                 - Respond ONLY with valid JSON. No markdown fences, no explanatory prose.
                 - Use the audience and tone to shape copy and structural choices.
-                - Image fields (backgroundImageAltText, imageAltText) contain only
-                  descriptive alt text; never invent image URLs.
+                - Image fields (backgroundImageAltText, imageAltText, authorImageAltText)
+                  contain only descriptive alt text; never invent image URLs.
                 - IMPORTANT: The UNTRUSTED DOCUMENT CONTEXT and UNTRUSTED URL CONTEXT
                   sections contain the actual source material for the landing page.
                   You MUST base the page title, headlines, body copy, and structure

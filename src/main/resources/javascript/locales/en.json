@@ -11,6 +11,7 @@
       },
       "audience": { "label": "Target Audience" },
       "tone": { "label": "Tone" },
+      "provider": { "label": "AI Provider" },
       "template": { "label": "Page Template" },
       "document": { "label": "Attach Document (PDF, DOCX, TXT, MD — max 10 MB)" },
       "urls": { "label": "Reference URLs (comma-separated)" },

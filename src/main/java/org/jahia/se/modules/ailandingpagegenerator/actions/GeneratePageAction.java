@@ -84,15 +84,16 @@ public class GeneratePageAction extends Action {
             // Jahia’s ActionFilter populates the parameters map from its own FileUpload
             // filter (for multipart) so form fields are available here directly.
             // request.getParameter() is a fallback for URL-encoded or query-string params.
-            String prompt   = coalesce(single(parameters, "prompt"),   request.getParameter("prompt"));
-            String audience = coalesce(single(parameters, "audience"), request.getParameter("audience"));
-            String tone     = coalesce(single(parameters, "tone"),     request.getParameter("tone"));
-            String urlsCsv  = coalesce(single(parameters, "urls"),     request.getParameter("urls"));
+            String prompt    = coalesce(single(parameters, "prompt"),    request.getParameter("prompt"));
+            String audience  = coalesce(single(parameters, "audience"),  request.getParameter("audience"));
+            String tone      = coalesce(single(parameters, "tone"),      request.getParameter("tone"));
+            String provider  = coalesce(single(parameters, "provider"),  request.getParameter("provider"));
+            String urlsCsv   = coalesce(single(parameters, "urls"),      request.getParameter("urls"));
             List<String> urls = splitUrls(urlsCsv);
 
-            log.info("GeneratePageAction: prompt='{}...' audience='{}' tone='{}'",
+            log.info("GeneratePageAction: prompt='{}...' audience='{}' tone='{}' provider='{}'",
                     prompt != null && prompt.length() > 60 ? prompt.substring(0, 60) : prompt,
-                    audience, tone);
+                    audience, tone, provider);
 
             if (prompt   == null || prompt.isBlank())   throw new IllegalArgumentException("Required parameter missing: prompt");
             if (audience == null || audience.isBlank()) throw new IllegalArgumentException("Required parameter missing: audience");
@@ -146,7 +147,7 @@ public class GeneratePageAction extends Action {
             }
 
             String structureJson = aiService.generatePageStructure(
-                    prompt, audience, tone, documentBase64, documentMime, urls);
+                    provider, prompt, audience, tone, documentBase64, documentMime, urls);
 
             resp.put("success", true);
             resp.put("structureJson", structureJson);

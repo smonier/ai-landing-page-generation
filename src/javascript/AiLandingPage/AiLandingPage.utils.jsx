@@ -33,7 +33,8 @@ export async function getConfig(nodePath, lang) {
         const json = JSON.parse(text);
         return {
             audiences: (json.audiences || '').split(',').map(s => s.trim()).filter(Boolean),
-            tones: (json.tones || '').split(',').map(s => s.trim()).filter(Boolean)
+            tones: (json.tones || '').split(',').map(s => s.trim()).filter(Boolean),
+            providers: Array.isArray(json.providers) ? json.providers : []
         };
     } catch (_) {
         return null;
@@ -49,13 +50,14 @@ export async function getConfig(nodePath, lang) {
  * @param {string} params.prompt         - author's natural-language prompt
  * @param {string} params.audience       - selected audience
  * @param {string} params.tone           - selected tone
+ * @param {string|null} params.provider     - AI provider to use ("anthropic" or "openai"), or null for default
  * @param {File|null} params.documentFile - raw File object to upload as binary, or null
  * @param {string|null} params.urls      - comma-separated URLs, or null
  * @returns {Promise<{success: boolean, structureJson: string, error: string|null}>}
  */
 export async function generatePage({
     nodePath, lang, prompt, audience, tone,
-    documentFile, urls
+    provider, documentFile, urls
 }) {
     const url = buildActionUrl(null, lang, nodePath, 'generatePageAction');
     // Use FormData (multipart) — text fields land in the action parameters map via
@@ -64,6 +66,10 @@ export async function generatePage({
     body.append('prompt', prompt);
     body.append('audience', audience);
     body.append('tone', tone);
+    if (provider) {
+        body.append('provider', provider);
+    }
+
     if (documentFile) {
         // Append as binary file part — no base64 inflation
         body.append('documentFile', documentFile, documentFile.name);

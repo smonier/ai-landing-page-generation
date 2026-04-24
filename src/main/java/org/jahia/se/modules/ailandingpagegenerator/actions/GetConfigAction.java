@@ -7,6 +7,7 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.render.RenderContext;
 import org.jahia.services.render.Resource;
 import org.jahia.services.render.URLResolver;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -54,6 +55,7 @@ public class GetConfigAction extends Action {
         JSONObject resp = new JSONObject();
         resp.put("audiences", aiService.getAudiences());
         resp.put("tones", aiService.getTones());
+        resp.put("providers", new JSONArray(aiService.getAvailableProviders()));
 
         HttpServletResponse response = renderContext.getResponse();
         response.setStatus(HttpServletResponse.SC_OK);
