@@ -12,11 +12,31 @@ import {
     FormControl,
     InputLabel,
     LinearProgress,
+    MenuItem,
     Select,
     TextField,
     Typography
 } from '@mui/material';
 import {generatePage, getConfig, getTemplates, materializePage} from './AiLandingPage.utils';
+
+const PROVIDER_META = {
+    anthropic: {
+        label: 'Anthropic (Claude)',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg'
+    },
+    openai: {
+        label: 'OpenAI (GPT)',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg'
+    },
+    deepseek: {
+        label: 'DeepSeek',
+        logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/DeepSeek-icon.svg'
+    }
+};
+
+const DEFAULT_PROVIDERS = ['anthropic', 'openai', 'deepseek'];
+
+const getProviderLabel = provider => PROVIDER_META[provider]?.label || provider;
 
 // ── Dialog steps ──────────────────────────────────────────────────────────────
 const STEP_FORM = 'FORM';
@@ -74,7 +94,7 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
     const fileInputRef = useRef(null);
     const [audiences, setAudiences] = useState(DEFAULT_AUDIENCES);
     const [tones, setTones] = useState(DEFAULT_TONES);
-    const [providers, setProviders] = useState([]);
+    const [providers, setProviders] = useState(DEFAULT_PROVIDERS);
     const [templates, setTemplates] = useState([]);
 
     useEffect(() => {
@@ -94,9 +114,13 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                     if (cfg.providers.length === 1) {
                         dispatch({type: 'SET_FIELD', field: 'provider', value: cfg.providers[0]});
                     }
+                } else {
+                    setProviders(DEFAULT_PROVIDERS);
                 }
             })
-            .catch(() => { /* keep defaults */ });
+            .catch(() => {
+                setProviders(DEFAULT_PROVIDERS);
+            });
 
         getTemplates(nodePath, lang)
             .then(list => {
@@ -151,13 +175,13 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                 urls: state.urlsRaw || null
             });
 
-            if (!result.success) {
+            if (result.success) {
+                dispatch({type: 'PREVIEW', structureJson: result.structureJson});
+            } else {
                 const key = result.rateLimited ?
                     'ai-landing-page-generation.dialog.error.rateLimit' :
                     'ai-landing-page-generation.dialog.error.generic';
                 dispatch({type: 'ERROR', error: t(key)});
-            } else {
-                dispatch({type: 'PREVIEW', structureJson: result.structureJson});
             }
         } catch (_) {
             dispatch({type: 'ERROR', error: t('ai-landing-page-generation.dialog.error.generic')});
@@ -185,10 +209,10 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                 templateName: state.templateName
             });
 
-            if (!result.success) {
-                dispatch({type: 'ERROR', error: result.error || t('ai-landing-page-generation.dialog.error.generic')});
-            } else {
+            if (result.success) {
                 dispatch({type: 'SUCCESS'});
+            } else {
+                dispatch({type: 'ERROR', error: result.error || t('ai-landing-page-generation.dialog.error.generic')});
             }
         } catch (_) {
             dispatch({type: 'ERROR', error: t('ai-landing-page-generation.dialog.error.generic')});
@@ -231,14 +255,17 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                             <FormControl fullWidth disabled={isLoading}>
                                 <InputLabel>{t('ai-landing-page-generation.dialog.audience.label')}</InputLabel>
                                 <Select
-                                    native
+                                    displayEmpty
                                     value={state.audience}
                                     label={t('ai-landing-page-generation.dialog.audience.label')}
+                                    renderValue={selected => {
+                                        return selected;
+                                    }}
                                     onChange={e => dispatch({type: 'SET_FIELD', field: 'audience', value: e.target.value})}
                                 >
-                                    <option value=""/>
+                                    <MenuItem value=""><em> </em></MenuItem>
                                     {audiences.map(a => (
-                                        <option key={a} value={a}>{a}</option>
+                                        <MenuItem key={a} value={a}>{a}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
@@ -246,34 +273,61 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                             <FormControl fullWidth disabled={isLoading}>
                                 <InputLabel>{t('ai-landing-page-generation.dialog.tone.label')}</InputLabel>
                                 <Select
-                                    native
+                                    displayEmpty
                                     value={state.tone}
                                     label={t('ai-landing-page-generation.dialog.tone.label')}
+                                    renderValue={selected => {
+                                        return selected;
+                                    }}
                                     onChange={e => dispatch({type: 'SET_FIELD', field: 'tone', value: e.target.value})}
                                 >
-                                    <option value=""/>
+                                    <MenuItem value=""><em> </em></MenuItem>
                                     {tones.map(tone => (
-                                        <option key={tone} value={tone}>{tone}</option>
+                                        <MenuItem key={tone} value={tone}>{tone}</MenuItem>
                                     ))}
                                 </Select>
                             </FormControl>
 
-                            {providers.length > 1 && (
+                            {providers.length > 0 && (
                                 <FormControl fullWidth disabled={isLoading}>
                                     <InputLabel>{t('ai-landing-page-generation.dialog.provider.label')}</InputLabel>
                                     <Select
-                                        native
+                                        displayEmpty
                                         value={state.provider}
                                         label={t('ai-landing-page-generation.dialog.provider.label')}
+                                        renderValue={selected => {
+                                            const meta = PROVIDER_META[selected] || {};
+                                            return (
+                                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                                    {meta.logo && (
+                                                        <Box
+                                                            component="img"
+                                                            src={meta.logo}
+                                                            alt={getProviderLabel(selected)}
+                                                            sx={{width: 18, height: 18, borderRadius: '4px'}}
+                                                        />
+                                                    )}
+                                                    <span>{getProviderLabel(selected)}</span>
+                                                </Box>
+                                            );
+                                        }}
                                         onChange={e => dispatch({type: 'SET_FIELD', field: 'provider', value: e.target.value})}
                                     >
-                                        <option value=""/>
+                                        <MenuItem value=""><em> </em></MenuItem>
                                         {providers.map(p => (
-                                            <option key={p} value={p}>
-                                                {p === 'anthropic' ? 'Anthropic (Claude)' :
-                                                    p === 'openai' ? 'OpenAI (GPT)' :
-                                                        p === 'deepseek' ? 'DeepSeek' : p}
-                                            </option>
+                                            <MenuItem key={p} value={p}>
+                                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                                    {PROVIDER_META[p]?.logo && (
+                                                        <Box
+                                                            component="img"
+                                                            src={PROVIDER_META[p].logo}
+                                                            alt={getProviderLabel(p)}
+                                                            sx={{width: 18, height: 18, borderRadius: '4px'}}
+                                                        />
+                                                    )}
+                                                    <span>{getProviderLabel(p)}</span>
+                                                </Box>
+                                            </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>

@@ -53,6 +53,13 @@ module.exports = (env, argv) => {
                         },
                         'sass-loader'
                     ]
+                },
+                {
+                    test: /\.svg$/,
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'assets/[name][ext]'
+                    }
                 }
             ]
         },
