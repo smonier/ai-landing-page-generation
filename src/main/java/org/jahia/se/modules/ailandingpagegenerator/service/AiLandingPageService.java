@@ -4,14 +4,14 @@ import java.util.List;
 
 /**
  * Service contract for AI landing page generation.
- * Supports multiple AI providers (Anthropic Claude, OpenAI GPT).
+ * Supports multiple AI providers (Anthropic Claude, OpenAI GPT, DeepSeek).
  */
 public interface AiLandingPageService {
 
     /**
      * Generate a landing-page structure from the author's inputs.
      *
-     * @param provider        AI provider to use: "anthropic" or "openai".
+    * @param provider        AI provider to use: "anthropic", "openai", or "deepseek".
      *                        If null/empty, defaults to the first configured provider.
      * @param prompt          natural-language description of the desired page
      * @param audience        target audience identifier (e.g. "IT", "Finance")
@@ -38,7 +38,7 @@ public interface AiLandingPageService {
 
     /**
      * Returns which AI providers are currently configured (have a non-empty API key).
-     * Possible values in the list: "anthropic", "openai".
+     * Possible values in the list: "anthropic", "openai", "deepseek".
      */
     List<String> getAvailableProviders();
 }

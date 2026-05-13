@@ -51,6 +51,11 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
     private volatile String openaiBaseUrl   = "https://api.openai.com";
     private volatile String openaiModel     = "gpt-4o";
 
+    // ── DeepSeek config (OpenAI-compatible API) ─────────────────────────────
+    private volatile String deepseekApiKey;
+    private volatile String deepseekBaseUrl = "https://api.deepseek.com";
+    private volatile String deepseekModel   = "deepseek-chat";
+
     // ── Shared config ─────────────────────────────────────────────────────────
     private volatile int    maxInputTokens  = 100_000;
     private volatile int    maxOutputTokens = 8_000;
@@ -98,6 +103,10 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
         openaiApiKey    = getString(dictionary, "OPENAI_API_KEY", null);
         openaiBaseUrl   = getString(dictionary, "OPENAI_API_BASE_URL", "https://api.openai.com");
         openaiModel     = getString(dictionary, "OPENAI_MODEL", "gpt-4o");
+        // DeepSeek
+        deepseekApiKey  = getString(dictionary, "DEEPSEEK_API_KEY", null);
+        deepseekBaseUrl = getString(dictionary, "DEEPSEEK_API_BASE_URL", "https://api.deepseek.com");
+        deepseekModel   = getString(dictionary, "DEEPSEEK_MODEL", "deepseek-chat");
         // Shared
         maxInputTokens  = getInt(dictionary, "AI_MAX_INPUT_TOKENS", 100_000);
         maxOutputTokens = getInt(dictionary, "AI_MAX_OUTPUT_TOKENS", 8_000);
@@ -107,10 +116,10 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
 
         List<String> providers = getAvailableProviders();
         if (providers.isEmpty()) {
-            log.error("No AI provider configured — set AI_API_KEY (Anthropic) or OPENAI_API_KEY (OpenAI).");
+            log.error("No AI provider configured — set AI_API_KEY (Anthropic), OPENAI_API_KEY (OpenAI), or DEEPSEEK_API_KEY (DeepSeek).");
         } else {
-            log.info("AI configuration updated. Available providers: {} anthropic-model={} openai-model={}",
-                    providers, model, openaiModel);
+            log.info("AI configuration updated. Available providers: {} anthropic-model={} openai-model={} deepseek-model={}",
+                    providers, model, openaiModel, deepseekModel);
         }
     }
 
@@ -126,26 +135,41 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
             List<String> urls) {
 
         // ── Resolve provider ─────────────────────────────────────────────────
-        boolean useOpenAI;
+        String resolvedProvider;
         if (provider == null || provider.isBlank()) {
             // Default to the first configured provider
             List<String> available = getAvailableProviders();
             if (available.isEmpty()) {
-                throw new IllegalStateException("No AI provider configured. Set AI_API_KEY or OPENAI_API_KEY.");
+                throw new IllegalStateException("No AI provider configured. Set AI_API_KEY, OPENAI_API_KEY, or DEEPSEEK_API_KEY.");
             }
-            useOpenAI = "openai".equals(available.get(0));
+            resolvedProvider = available.get(0);
         } else {
-            useOpenAI = "openai".equalsIgnoreCase(provider);
+            resolvedProvider = provider.trim().toLowerCase();
         }
 
-        if (useOpenAI) {
-            if (openaiApiKey == null || openaiApiKey.isBlank()) {
-                throw new IllegalStateException("OPENAI_API_KEY is not configured.");
-            }
-        } else {
-            if (apiKey == null || apiKey.isBlank()) {
-                throw new IllegalStateException("AI_API_KEY (Anthropic) is not configured.");
-            }
+        if (!"anthropic".equals(resolvedProvider)
+                && !"openai".equals(resolvedProvider)
+                && !"deepseek".equals(resolvedProvider)) {
+            throw new IllegalArgumentException("Unsupported provider: " + resolvedProvider);
+        }
+
+        switch (resolvedProvider) {
+            case "openai":
+                if (openaiApiKey == null || openaiApiKey.isBlank()) {
+                    throw new IllegalStateException("OPENAI_API_KEY is not configured.");
+                }
+                break;
+            case "deepseek":
+                if (deepseekApiKey == null || deepseekApiKey.isBlank()) {
+                    throw new IllegalStateException("DEEPSEEK_API_KEY is not configured.");
+                }
+                break;
+            case "anthropic":
+            default:
+                if (apiKey == null || apiKey.isBlank()) {
+                    throw new IllegalStateException("AI_API_KEY (Anthropic) is not configured.");
+                }
+                break;
         }
 
         // Rate-limit check (throws RateLimitExceededException if over quota)
@@ -192,10 +216,17 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
             promptHash = assembled.promptHash();
 
             String rawResult;
-            if (useOpenAI) {
-                rawResult = callOpenAI(assembled);
-            } else {
-                rawResult = callAnthropic(assembled);
+            switch (resolvedProvider) {
+                case "openai":
+                    rawResult = callChatCompletions(openaiBaseUrl, openaiApiKey, openaiModel, assembled, "OpenAI");
+                    break;
+                case "deepseek":
+                    rawResult = callChatCompletions(deepseekBaseUrl, deepseekApiKey, deepseekModel, assembled, "DeepSeek");
+                    break;
+                case "anthropic":
+                default:
+                    rawResult = callAnthropic(assembled);
+                    break;
             }
 
             // Token tracking best-effort (Anthropic provides exact counts; OpenAI counted inside callOpenAI)
@@ -207,7 +238,19 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
             throw new RuntimeException("AI generation failed: " + e.getMessage(), e);
         } finally {
             long duration = System.currentTimeMillis() - startMs;
-            String usedModel = useOpenAI ? openaiModel : model;
+            String usedModel;
+            switch (resolvedProvider) {
+                case "openai":
+                    usedModel = openaiModel;
+                    break;
+                case "deepseek":
+                    usedModel = deepseekModel;
+                    break;
+                case "anthropic":
+                default:
+                    usedModel = model;
+                    break;
+            }
             RequestLogger.log(currentUser(), duration, usedModel, inputTokens, outputTokens,
                     success, errorClass, promptHash);
         }
@@ -237,29 +280,34 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
         return result.toString();
     }
 
-    /** Invoke OpenAI Chat Completions. */
-    private String callOpenAI(PromptAssembler.AssembledPrompt assembled) throws Exception {
+        /** Invoke OpenAI-compatible Chat Completions APIs (OpenAI, DeepSeek). */
+        private String callChatCompletions(
+            String baseUrl,
+            String apiKey,
+            String providerModel,
+            PromptAssembler.AssembledPrompt assembled,
+            String providerName) throws Exception {
         JSONArray messages = new JSONArray();
         messages.put(new JSONObject().put("role", "system").put("content", assembled.systemPrompt()));
         messages.put(new JSONObject().put("role", "user").put("content", assembled.userMessage()));
 
         JSONObject body = new JSONObject()
-                .put("model", openaiModel)
+            .put("model", providerModel)
                 .put("max_tokens", maxOutputTokens)
                 .put("messages", messages);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(openaiBaseUrl + "/v1/chat/completions"))
+            .uri(URI.create(baseUrl + "/v1/chat/completions"))
                 .timeout(Duration.ofMillis(timeoutMs))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + openaiApiKey)
+            .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new RuntimeException("OpenAI API error HTTP " + response.statusCode() + ": " + response.body());
+            throw new RuntimeException(providerName + " API error HTTP " + response.statusCode() + ": " + response.body());
         }
 
         return new JSONObject(response.body())
@@ -283,6 +331,9 @@ public class AiLandingPageServiceImpl implements AiLandingPageService, ManagedSe
         }
         if (openaiApiKey != null && !openaiApiKey.isBlank()) {
             providers.add("openai");
+        }
+        if (deepseekApiKey != null && !deepseekApiKey.isBlank()) {
+            providers.add("deepseek");
         }
         return Collections.unmodifiableList(providers);
     }

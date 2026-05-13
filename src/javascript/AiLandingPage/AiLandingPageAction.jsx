@@ -10,7 +10,8 @@ export const AiLandingPageAction = ({path, language, render: Render, ...otherPro
 
     const {checksResult} = useNodeChecks({path}, {
         showOnNodeTypes: ['jnt:page', 'jnt:navMenuText'],
-        requiredPermission: ['jcr:write_default']
+        requiredPermission: ['jcr:write_default'],
+        requireModuleInstalledOnSite: ['ai-landing-page-generation']
     });
 
     if (!Render || !checksResult) {

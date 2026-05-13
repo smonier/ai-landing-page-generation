@@ -270,7 +270,9 @@ export const AiLandingPageDialog = ({nodePath, lang, onClose}) => {
                                         <option value=""/>
                                         {providers.map(p => (
                                             <option key={p} value={p}>
-                                                {p === 'anthropic' ? 'Anthropic (Claude)' : 'OpenAI (GPT)'}
+                                                {p === 'anthropic' ? 'Anthropic (Claude)' :
+                                                    p === 'openai' ? 'OpenAI (GPT)' :
+                                                        p === 'deepseek' ? 'DeepSeek' : p}
                                             </option>
                                         ))}
                                     </Select>
